@@ -25,75 +25,73 @@ using System.Threading.Tasks;
 
 namespace NWarpAsync.Yield
 {
-    /// <summary>
-    /// YieldSink is the class a generator function should output its yielded values to.
-    /// </summary>
-    public class YieldSink<T> : IDisposable
-    {
-        internal Action NextAction;
-        internal T Current;
-        internal bool HasValue;
+	/// <summary>
+	/// YieldSink is the class a generator function should output its yielded values to.
+	/// </summary>
+	public class YieldSink<T> : IDisposable
+	{
+		internal Action NextAction;
+		internal T Current;
+		internal bool HasValue;
 
-        public bool Disposed { get; private set; }
+		public bool Disposed { get; private set; }
 
-        internal YieldSink() { }
-        ~YieldSink()
-        {
-            if (!Disposed)
-            {
-                TriggerDispose();
-            }
-        }
+		internal YieldSink ()
+		{
+		}
 
-        public void Dispose()
-        {
-            if (!Disposed)
-            {
-                TriggerDispose();
+		~YieldSink ()
+		{
+			if (!Disposed) {
+				TriggerDispose ();
+			}
+		}
 
-                GC.SuppressFinalize(this);
-            }
-        }
+		public void Dispose ()
+		{
+			if (!Disposed) {
+				TriggerDispose ();
 
-        void TriggerDispose()
-        {
-            Disposed = true;
-            if (NextAction != null)
-            {
-                NextAction();
-            }
-        }
+				GC.SuppressFinalize (this);
+			}
+		}
 
-        /// <summary>
-        /// Outputs a single value.
-        /// The return value of this method should be awaited by the generator function
-        ///  before returning control or calling Yield again.
-        /// </summary>
-        /// <param name="value">The value to yield.</param>
-        public YieldAwaitable<T> Yield(T value)
-        {
-            if (HasValue)
-            {
-                throw new InvalidOperationException("Yielded additional value before MoveNext(). This is probably caused by a missing await.");
-            }
+		void TriggerDispose ()
+		{
+			Disposed = true;
+			if (NextAction != null) {
+				NextAction ();
+			}
+		}
 
-            Current = value;
-            HasValue = true;
+		/// <summary>
+		/// Outputs a single value.
+		/// The return value of this method should be awaited by the generator function
+		///  before returning control or calling Yield again.
+		/// </summary>
+		/// <param name="value">The value to yield.</param>
+		public YieldAwaitable<T> Yield (T value)
+		{
+			if (HasValue) {
+				throw new InvalidOperationException ("Yielded additional value before MoveNext(). This is probably caused by a missing await.");
+			}
 
-            return new YieldAwaitable<T>(this);
-        }
+			Current = value;
+			HasValue = true;
 
-        /// <summary>
-        /// Outputs multiple values.
-        /// </summary>
-        /// <param name="enumerable">The values to yield. If null, no values will be yielded.</param>
-        /// <returns>A Task that is completed when all items in the enumerable have been yielded.</returns>
-        public async Task YieldAll(IEnumerable<T> enumerable)
-        {
-            foreach (T value in enumerable ?? Enumerable.Empty<T>())
-            {
-                await Yield(value);
-            }
-        }
-    }
+			return new YieldAwaitable<T> (this);
+		}
+
+		/// <summary>
+		/// Outputs multiple values.
+		/// </summary>
+		/// <param name="enumerable">The values to yield. If null, no values will be yielded.</param>
+		/// <returns>A Task that is completed when all items in the enumerable have been yielded.</returns>
+		public async Task YieldAll (IEnumerable<T> enumerable)
+		{
+			foreach (T value in enumerable ?? Enumerable.Empty<T>()) {
+				await Yield (value);
+			}
+		}
+	}
 }

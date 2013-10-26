@@ -25,60 +25,56 @@ using System.Collections.Generic;
 
 namespace NWarpAsync.Yield.Test
 {
-    [TestFixture]
-    public class TestDispose
-    {
-        class MockDisposable : IDisposable
-        {
-            public int DisposeCount;
+	[TestFixture]
+	public class TestDispose
+	{
+		class MockDisposable : IDisposable
+		{
+			public int DisposeCount;
 
-            public void Dispose()
-            {
-                DisposeCount++;
-            }
-        }
+			public void Dispose ()
+			{
+				DisposeCount++;
+			}
+		}
 
-        [Test]
-        public void TestSimpleConclusion()
-        {
-            var disposable = new MockDisposable();
-            foreach (var value in new Yielder<int>(async yieldSink =>
+		[Test]
+		public void TestSimpleConclusion ()
+		{
+			var disposable = new MockDisposable ();
+			foreach (var value in new Yielder<int>(async yieldSink =>
             {
                 using (disposable)
                 {
                     await yieldSink.Yield(1);
                 }
-            }))
-            {
-                Assert.AreEqual(1, value);
-                Assert.AreEqual(0, disposable.DisposeCount);
-            }
+            })) {
+				Assert.AreEqual (1, value);
+				Assert.AreEqual (0, disposable.DisposeCount);
+			}
 
-            Assert.AreEqual(1, disposable.DisposeCount);
-        }
+			Assert.AreEqual (1, disposable.DisposeCount);
+		}
 
-        static IEnumerable<int> HelperMethod(IDisposable disposable)
-        {
-            return new Yielder<int>(async yieldSink =>
-            {
-                using (disposable)
-                {
-                    await yieldSink.Yield(1);
-                    await yieldSink.Yield(2);
-                    await yieldSink.Yield(3);
-                }
-            });
-        }
+		static IEnumerable<int> HelperMethod (IDisposable disposable)
+		{
+			return new Yielder<int> (async yieldSink => {
+				using (disposable) {
+					await yieldSink.Yield (1);
+					await yieldSink.Yield (2);
+					await yieldSink.Yield (3);
+				}
+			});
+		}
 
-        [Test]
-        public void TestForcedConclusion()
-        {
-            var disposable = new MockDisposable();
-            foreach (var val in HelperMethod(disposable).Take(1))
-            {
-                Assert.AreEqual(1, val);
-            }
-            Assert.AreEqual(1, disposable.DisposeCount);
-        }
-    }
+		[Test]
+		public void TestForcedConclusion ()
+		{
+			var disposable = new MockDisposable ();
+			foreach (var val in HelperMethod(disposable).Take(1)) {
+				Assert.AreEqual (1, val);
+			}
+			Assert.AreEqual (1, disposable.DisposeCount);
+		}
+	}
 }

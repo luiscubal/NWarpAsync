@@ -62,7 +62,7 @@ namespace NWarpAsync.Yield
 		/// </summary>
 		/// <param name="yieldBuilder">The generator function. Must not be null.</param>
 		/// <exception cref="System.ArgumentNullException">If yieldBuilder is null.</exception>
-        public Yielder(Func<YieldSink<T>, Task> yieldBuilder)
+		public Yielder (Func<YieldSink<T>, Task> yieldBuilder)
 		{
 			if (yieldBuilder == null)
 				throw new ArgumentNullException ("yieldBuilder");
@@ -70,23 +70,26 @@ namespace NWarpAsync.Yield
 			this.yieldBuilder = yieldBuilder;
 		}
 
-		IEnumerator IEnumerable.GetEnumerator() {
+		IEnumerator IEnumerable.GetEnumerator ()
+		{
 			return GetEnumerator ();
 		}
 
-		public IEnumerator<T> GetEnumerator() {
-			var yieldSink = new YieldSink<T>();
-			return new YieldConsumer(yieldSink, yieldBuilder);
+		public IEnumerator<T> GetEnumerator ()
+		{
+			var yieldSink = new YieldSink<T> ();
+			return new YieldConsumer (yieldSink, yieldBuilder);
 		}
 
-		class YieldConsumer : IEnumerator<T> {
+		class YieldConsumer : IEnumerator<T>
+		{
 			readonly YieldSink<T> sink;
-            readonly Func<YieldSink<T>, Task> builder;
-            Task currentTask;
+			readonly Func<YieldSink<T>, Task> builder;
+			Task currentTask;
 			bool suspended;
 
-            internal YieldConsumer(YieldSink<T> sink, Func<YieldSink<T>, Task> builder)
-            {
+			internal YieldConsumer (YieldSink<T> sink, Func<YieldSink<T>, Task> builder)
+			{
 				this.sink = sink;
 				this.builder = builder;
 			}
@@ -107,20 +110,17 @@ namespace NWarpAsync.Yield
 					suspended = true;
 				}
 
-                if (currentTask == null)
-                {
-                    throw new InvalidOperationException("builder function returned null");
-                }
+				if (currentTask == null) {
+					throw new InvalidOperationException ("builder function returned null");
+				}
 
-                if (currentTask.Exception != null)
-                {
-                    var exceptions = currentTask.Exception.InnerExceptions
-                        .Where(innerException => !(innerException is YieldInterruptionException)).ToList();
-                    if (exceptions.Count != 0)
-                    {
-                        throw new AggregateException(exceptions);
-                    }
-                }
+				if (currentTask.Exception != null) {
+					var exceptions = currentTask.Exception.InnerExceptions
+                        .Where (innerException => !(innerException is YieldInterruptionException)).ToList ();
+					if (exceptions.Count != 0) {
+						throw new AggregateException (exceptions);
+					}
+				}
 
 				if (!sink.HasValue) {
 					DisposeSink ();

@@ -22,13 +22,15 @@ using System;
 
 namespace NWarpAsync.Yield
 {
-    /// <summary>
-    /// This class represents an exception that is triggered on the builder function of Yielder
-    ///  when the enumerator is disposed in the middle of the execution.
-    /// The builder function should not catch this exception. If it does so, it should rethrow it.
-    /// </summary>
-    public class YieldInterruptionException : Exception
-    {
-        internal YieldInterruptionException() { }
-    }
+	/// <summary>
+	/// This class represents an exception that is triggered on the builder function of Yielder
+	///  when the enumerator is disposed in the middle of the execution.
+	/// The builder function should not catch this exception. If it does so, it should rethrow it.
+	/// </summary>
+	public class YieldInterruptionException : Exception
+	{
+		internal YieldInterruptionException ()
+		{
+		}
+	}
 }

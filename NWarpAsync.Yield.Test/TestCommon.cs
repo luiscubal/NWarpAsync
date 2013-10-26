@@ -26,166 +26,144 @@ using System.Threading;
 
 namespace NWarpAsync.Yield.Test
 {
-    [TestFixture]
-    public class TestCommon
-    {
-        [Test]
-        public void TestNullArgument()
-        {
-            Assert.Throws<ArgumentNullException>(() => new Yielder<object>(null));
-        }
+	[TestFixture]
+	public class TestCommon
+	{
+		[Test]
+		public void TestNullArgument ()
+		{
+			Assert.Throws<ArgumentNullException> (() => new Yielder<object> (null));
+		}
 
-        [Test]
-        public void TestEmpty()
-        {
-            Assert.AreEqual(0, new Yielder<object>(async yieldSink =>
-            {
-            }).Count());
-        }
+		[Test]
+		public void TestEmpty ()
+		{
+			Assert.AreEqual (0, new Yielder<object> (async yieldSink => {
+			}).Count ());
+		}
 
-        [Test]
-        public void TestSingle()
-        {
-            var yielder = new Yielder<int>(async yieldSink => await yieldSink.Yield(1));
-            Assert.AreEqual(1, yielder.Single());
-        }
+		[Test]
+		public void TestSingle ()
+		{
+			var yielder = new Yielder<int> (async yieldSink => await yieldSink.Yield (1));
+			Assert.AreEqual (1, yielder.Single ());
+		}
 
-        [Test]
-        public void TestSimple()
-        {
-            int previousValue = 0;
-            foreach (int value in new Yielder<int>(async yieldSink =>
+		[Test]
+		public void TestSimple ()
+		{
+			int previousValue = 0;
+			foreach (int value in new Yielder<int>(async yieldSink =>
             {
                 await yieldSink.Yield(1);
                 await yieldSink.Yield(2);
                 await yieldSink.Yield(3);
-            }))
-            {
-                Assert.AreEqual(++previousValue, value);
-            }
+            })) {
+				Assert.AreEqual (++previousValue, value);
+			}
 
-            Assert.AreEqual(3, previousValue);
-        }
+			Assert.AreEqual (3, previousValue);
+		}
 
-        [Test]
-        public void TestLazy()
-        {
-            int value = 0;
-            var yielder = new Yielder<int>(async yieldSink =>
-            {
-                value = 1;
-                await yieldSink.Yield(123);
-                value = 2;
-            });
-            Assert.AreEqual(0, value);
+		[Test]
+		public void TestLazy ()
+		{
+			int value = 0;
+			var yielder = new Yielder<int> (async yieldSink => {
+				value = 1;
+				await yieldSink.Yield (123);
+				value = 2;
+			});
+			Assert.AreEqual (0, value);
 
-            foreach (int collectionValue in yielder)
-            {
-                Assert.AreEqual(123, collectionValue);
-                Assert.AreEqual(1, value);
-            }
-            Assert.AreEqual(2, value);
-        }
+			foreach (int collectionValue in yielder) {
+				Assert.AreEqual (123, collectionValue);
+				Assert.AreEqual (1, value);
+			}
+			Assert.AreEqual (2, value);
+		}
+		#pragma warning disable 1998
+		#pragma warning disable 4014
 
-#pragma warning disable 1998
-#pragma warning disable 4014
+		[Test]
+		public void TestMissingAwait ()
+		{
+			var yielder = new Yielder<int> (async yieldSink => {
+				yieldSink.Yield (1);
+				yieldSink.Yield (2);
+			});
+			try {
+				yielder.GetEnumerator ().MoveNext ();
 
-        [Test]
-        public void TestMissingAwait()
-        {
-            var yielder = new Yielder<int>(async yieldSink =>
-            {
-                yieldSink.Yield(1);
-                yieldSink.Yield(2);
-            });
-            try
-            {
-                yielder.GetEnumerator().MoveNext();
+				Assert.Fail ();
+			} catch (AggregateException e) {
+				Assert.IsInstanceOf<InvalidOperationException> (e.InnerExceptions.Single ());
+			} catch (Exception e) {
+				Assert.Fail ();
+			}
+		}
 
-                Assert.Fail();
-            }
-            catch (AggregateException e)
-            {
-                Assert.IsInstanceOf<InvalidOperationException>(e.InnerExceptions.Single());
-            }
-            catch (Exception e)
-            {
-                Assert.Fail();
-            }
-        }
+		[Test]
+		public void TestCombinedAwait ()
+		{
+			var yielder = new Yielder<int> (async yieldSink => {
+				yieldSink.Yield (1);
+				await yieldSink.Yield (2);
+			});
+			try {
+				yielder.GetEnumerator ().MoveNext ();
 
-        [Test]
-        public void TestCombinedAwait()
-        {
-            var yielder = new Yielder<int>(async yieldSink =>
-            {
-                yieldSink.Yield(1);
-                await yieldSink.Yield(2);
-            });
-            try
-            {
-                yielder.GetEnumerator().MoveNext();
+				Assert.Fail ();
+			} catch (AggregateException e) {
+				Assert.IsInstanceOf<InvalidOperationException> (e.InnerExceptions.Single ());
+			} catch (Exception e) {
+				Assert.Fail ();
+			}
+		}
 
-                Assert.Fail();
-            }
-            catch (AggregateException e)
-            {
-                Assert.IsInstanceOf<InvalidOperationException>(e.InnerExceptions.Single());
-            }
-            catch (Exception e)
-            {
-                Assert.Fail();
-            }
-        }
+		[Test]
+		public void TestThreading ()
+		{
+			var thread1 = new Thread (() => {
+				var enumerator = new Yielder<int> (async yieldBuilder => {
+					Assert.AreEqual ("Thread 1", Thread.CurrentThread.Name);
+					await yieldBuilder.Yield (1);
+					Assert.AreEqual ("Thread 2", Thread.CurrentThread.Name);
+				}).GetEnumerator ();
 
-        [Test]
-        public void TestThreading()
-        {
-            var thread1 = new Thread(() =>
-            {
-                var enumerator = new Yielder<int>(async yieldBuilder =>
-                {
-                    Assert.AreEqual("Thread 1", Thread.CurrentThread.Name);
-                    await yieldBuilder.Yield(1);
-                    Assert.AreEqual("Thread 2", Thread.CurrentThread.Name);
-                }).GetEnumerator();
+				Thread.CurrentThread.Name = "Thread 1";
+				enumerator.MoveNext ();
 
-                Thread.CurrentThread.Name = "Thread 1";
-                enumerator.MoveNext();
+				var thread2 = new Thread (() => {
+					Thread.CurrentThread.Name = "Thread 2";
+					enumerator.MoveNext ();
+				});
+				thread2.Start ();
+				thread2.Join ();
 
-                var thread2 = new Thread(() =>
-                {
-                    Thread.CurrentThread.Name = "Thread 2";
-                    enumerator.MoveNext();
-                });
-                thread2.Start();
-                thread2.Join();
+			});
+			thread1.Start ();
+			thread1.Join ();
+		}
 
-            });
-            thread1.Start();
-            thread1.Join();
-        }
+		IEnumerable<int> HelperYielder ()
+		{
+			yield return 1;
+			yield return 2;
+			yield return 3;
+		}
 
-        IEnumerable<int> HelperYielder()
-        {
-            yield return 1;
-            yield return 2;
-            yield return 3;
-        }
-
-        [Test]
-        public void TestMultiple()
-        {
-            var yielder = new Yielder<int>(async yieldSink =>
-            {
-                await yieldSink.YieldAll(HelperYielder());
-            });
-            int previousValue = 0;
-            foreach (var value in yielder)
-            {
-                Assert.AreEqual(++previousValue, value);
-            }
-            Assert.AreEqual(3, previousValue);
-        }
-    }
+		[Test]
+		public void TestMultiple ()
+		{
+			var yielder = new Yielder<int> (async yieldSink => {
+				await yieldSink.YieldAll (HelperYielder ());
+			});
+			int previousValue = 0;
+			foreach (var value in yielder) {
+				Assert.AreEqual (++previousValue, value);
+			}
+			Assert.AreEqual (3, previousValue);
+		}
+	}
 }

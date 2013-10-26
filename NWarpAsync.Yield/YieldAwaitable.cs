@@ -23,46 +23,45 @@ using System.Runtime.CompilerServices;
 
 namespace NWarpAsync.Yield
 {
-    public class YieldAwaitable<T>
-    {
-        readonly YieldSink<T> sink;
+	public class YieldAwaitable<T>
+	{
+		readonly YieldSink<T> sink;
 
-        internal YieldAwaitable(YieldSink<T> sink)
-        {
-            this.sink = sink;
-        }
+		internal YieldAwaitable (YieldSink<T> sink)
+		{
+			this.sink = sink;
+		}
 
-        public YieldAwaiter GetAwaiter()
-        {
-            return new YieldAwaiter(sink);
-        }
+		public YieldAwaiter GetAwaiter ()
+		{
+			return new YieldAwaiter (sink);
+		}
 
-        public class YieldAwaiter : INotifyCompletion
-        {
-            readonly YieldSink<T> sink;
+		public class YieldAwaiter : INotifyCompletion
+		{
+			readonly YieldSink<T> sink;
 
-            internal YieldAwaiter(YieldSink<T> sink)
-            {
-                this.sink = sink;
-            }
+			internal YieldAwaiter (YieldSink<T> sink)
+			{
+				this.sink = sink;
+			}
 
-            public bool IsCompleted { get; private set; }
+			public bool IsCompleted { get; private set; }
 
-            public void GetResult()
-            {
-                if (sink.Disposed)
-                    throw new YieldInterruptionException();
-            }
+			public void GetResult ()
+			{
+				if (sink.Disposed)
+					throw new YieldInterruptionException ();
+			}
 
-            public void OnCompleted(Action continuation)
-            {
-                sink.NextAction = () =>
-                {
-                    IsCompleted = true;
-                    continuation();
-                };
-            }
-        }
-    }
+			public void OnCompleted (Action continuation)
+			{
+				sink.NextAction = () => {
+					IsCompleted = true;
+					continuation ();
+				};
+			}
+		}
+	}
 }
 
