@@ -20,46 +20,18 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace NWarpAsync.EmulateAwait
 {
-    public delegate IEnumerable<TaskIteration<T>> GeneratorFunc<T>(AsyncContext<T> context);
-
-    public delegate Task<T> AsyncFunc<T>(params object[] arguments);
-
-    public static class AsyncBuilder
+    public sealed class TaskIteration<T>
     {
-        public static AsyncFunc<T> FromGenerator<T>(GeneratorFunc<T> generator)
+        internal readonly Task task;
+        internal readonly T value;
+        internal TaskIteration(Task task, T value)
         {
-            if (generator == null)
-            {
-                throw new ArgumentNullException("generator");
-            }
-            return arguments => RunAsAsync<T>(generator, arguments);
-        }
-
-        public static async Task<T> RunAsAsync<T>(GeneratorFunc<T> generator, params object[] arguments)
-        {
-            if (generator == null)
-            {
-                throw new ArgumentNullException("generator");
-            }
-
-            var context = new AsyncContext<T>(arguments);
-            foreach (var partialResult in generator(context))
-            {
-                var task = partialResult.task;
-                if (task == null)
-                {
-                    return partialResult.value;
-                }
-                await task;
-            }
-
-            throw new IncompleteOperationException("Generator function did not return a value");
+            this.task = task;
+            this.value = value;
         }
     }
 }

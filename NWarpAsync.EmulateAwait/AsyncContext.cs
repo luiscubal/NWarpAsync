@@ -29,6 +29,7 @@ namespace NWarpAsync.EmulateAwait
     public class AsyncContext<T>
     {
         dynamic[] arguments;
+        bool hasLastValueReady;
         dynamic lastReturnedValue;
         AggregateException lastException;
         public AsyncContext(dynamic[] arguments)
@@ -40,9 +41,13 @@ namespace NWarpAsync.EmulateAwait
             this.arguments = arguments;
         }
 
-        public Tuple<Task, T> Return(T value)
+        public TaskIteration<T> Return(T value)
         {
-            return Tuple.Create(default(Task), value);
+            if (hasLastValueReady)
+            {
+                throw new InvalidOperationException("Returning before calling GrabLastValue() first");
+            }
+            return new TaskIteration<T>(null, value);
         }
 
         Type GetGenericTaskType(Task task)
@@ -62,9 +67,17 @@ namespace NWarpAsync.EmulateAwait
             return null;
         }
 
-        public Tuple<Task, T> Await(Task task)
+        public TaskIteration<T> Await(Task task)
         {
-            return Tuple.Create(task.ContinueWith(precedent =>
+            if (task == null)
+            {
+                throw new ArgumentNullException("task");
+            }
+            if (hasLastValueReady)
+            {
+                throw new InvalidOperationException("Awaiting before calling GrabLastValue() first");
+            }
+            return new TaskIteration<T>(task.ContinueWith(precedent =>
             {
                 lastException = precedent.Exception;
                 var genericTaskType = GetGenericTaskType(precedent);
@@ -73,16 +86,33 @@ namespace NWarpAsync.EmulateAwait
                     dynamic genericTask = precedent;
                     lastReturnedValue = genericTask.Result;
                 }
+                hasLastValueReady = true;
             }), default(T));
         }
 
         public dynamic GrabLastValue()
         {
+            if (!hasLastValueReady)
+            {
+                throw new InvalidOperationException("Used GrabLastValue() without awaiting anything first.");
+            }
+            hasLastValueReady = false;
+
             if (lastException != null)
             {
                 throw lastException;
             }
             return lastReturnedValue;
+        }
+
+        public int ArgumentsCount
+        {
+            get { return arguments.Length; }
+        }
+
+        public TResult Argument<TResult>(int position)
+        {
+            return arguments[position];
         }
     }
 }

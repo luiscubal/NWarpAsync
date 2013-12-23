@@ -30,7 +30,7 @@ namespace NWarpAsync.EmulateAwait.Test
     [TestFixture]
     public class TestEmulatedAwait
     {
-        IEnumerable<Tuple<Task, int>> DoNothing(AsyncContext<int> context)
+        IEnumerable<TaskIteration<int>> DoNothing(AsyncContext<int> context)
         {
             yield return context.Return(42);
         }
@@ -49,7 +49,7 @@ namespace NWarpAsync.EmulateAwait.Test
             Assert.Throws<ArgumentNullException>(() => AsyncBuilder.FromGenerator(default(GeneratorFunc<int>))());
         }
 
-        IEnumerable<Tuple<Task, int>> Incomplete(AsyncContext<int> context)
+        IEnumerable<TaskIteration<int>> Incomplete(AsyncContext<int> context)
         {
             yield break;
         }
@@ -69,12 +69,12 @@ namespace NWarpAsync.EmulateAwait.Test
             }
         }
 
-        IEnumerable<Tuple<Task, bool>> BasicAwait(AsyncContext<bool> context)
+        IEnumerable<TaskIteration<bool>> BasicAwait(AsyncContext<bool> context)
         {
             bool done = false;
             yield return context.Await(Task.Factory.StartNew(() => true));
             done = context.GrabLastValue();
-            yield return Tuple.Create(default(Task), done);
+            yield return context.Return(done);
         }
 
         [Test]
@@ -85,7 +85,7 @@ namespace NWarpAsync.EmulateAwait.Test
             Assert.IsTrue(task.Result);
         }
 
-        IEnumerable<Tuple<Task, bool>> AwaitException(AsyncContext<bool> context)
+        IEnumerable<TaskIteration<bool>> AwaitException(AsyncContext<bool> context)
         {
             bool done = false;
             yield return context.Await(Task.Factory.StartNew(() => { throw new InvalidOperationException(); }));
@@ -108,7 +108,7 @@ namespace NWarpAsync.EmulateAwait.Test
             Assert.IsTrue(task.Result);
         }
 
-        IEnumerable<Tuple<Task, int>> MultipleSteps(AsyncContext<int> context)
+        IEnumerable<TaskIteration<int>> MultipleSteps(AsyncContext<int> context)
         {
             yield return context.Await(Task.Factory.StartNew(() => { throw new InvalidOperationException(); }));
             try
@@ -121,8 +121,8 @@ namespace NWarpAsync.EmulateAwait.Test
                 Assert.IsInstanceOf<InvalidOperationException>(e.InnerException);
             }
 
-            yield return context.Await(Task.Factory.StartNew(() => 42));
-            yield return context.Await(Task.Factory.StartNew(() => context.GrabLastValue() * 2));
+            yield return context.Await(Task.FromResult(42));
+            yield return context.Await(Task.FromResult(context.GrabLastValue() * 2));
             yield return context.Return(context.GrabLastValue());
         }
 
@@ -132,6 +132,59 @@ namespace NWarpAsync.EmulateAwait.Test
             var task = AsyncBuilder.FromGenerator<int>(MultipleSteps)();
             task.Wait();
             Assert.AreEqual(84, task.Result);
+        }
+
+        IEnumerable<TaskIteration<int>> NullTask(AsyncContext<int> context)
+        {
+            yield return context.Await(null);
+            Assert.Fail();
+        }
+
+        [Test]
+        public void TestNullTask()
+        {
+            try {
+                AsyncBuilder.RunAsAsync<int>(NullTask).Wait();
+                Assert.Fail();
+            }
+            catch (AggregateException e)
+            {
+                Assert.IsInstanceOf<ArgumentNullException>(e.InnerException);
+            }
+        }
+
+        IEnumerable<TaskIteration<int>> MissingGrab(AsyncContext<int> context)
+        {
+            yield return context.Await(Task.FromResult(42));
+            yield return context.Return(42);
+        }
+
+        [Test]
+        public void TestMissingGrab()
+        {
+            try
+            {
+                AsyncBuilder.RunAsAsync<int>(MissingGrab).Wait();
+                Assert.Fail();
+            }
+            catch (AggregateException e)
+            {
+                Assert.IsInstanceOf<InvalidOperationException>(e.InnerException);
+            }
+        }
+
+        IEnumerable<TaskIteration<int>> Arguments(AsyncContext<int> context)
+        {
+            int arg1 = context.Argument<int>(0);
+            string arg2 = context.Argument<string>(1);
+
+            yield return context.Return(context.ArgumentsCount + arg1 + arg2.Length);
+        }
+
+        [Test]
+        public void TestArguments()
+        {
+            Assert.AreEqual(17, AsyncBuilder.RunAsAsync<int>(Arguments, 10, "Hello").Result);
         }
     }
 }
