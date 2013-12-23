@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NWarpAsync.Yield", "NWarpAs
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NWarpAsync.Yield.Test", "NWarpAsync.Yield.Test\NWarpAsync.Yield.Test.csproj", "{D3EF9113-2190-4A3D-A1DE-2D98EA264FDA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NWarpAsync.EmulateAwait", "NWarpAsync.EmulateAwait\NWarpAsync.EmulateAwait.csproj", "{746F5960-53FB-464B-8526-9D90385195B0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NWarpAsync.EmulateAwait.Test", "NWarpAsync.EmulateAwait.Test\NWarpAsync.EmulateAwait.Test.csproj", "{A853EB3C-A4D0-4209-8EA6-7E8250EA48D6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,14 @@ Global
 		{D3EF9113-2190-4A3D-A1DE-2D98EA264FDA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D3EF9113-2190-4A3D-A1DE-2D98EA264FDA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D3EF9113-2190-4A3D-A1DE-2D98EA264FDA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{746F5960-53FB-464B-8526-9D90385195B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{746F5960-53FB-464B-8526-9D90385195B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{746F5960-53FB-464B-8526-9D90385195B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{746F5960-53FB-464B-8526-9D90385195B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A853EB3C-A4D0-4209-8EA6-7E8250EA48D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A853EB3C-A4D0-4209-8EA6-7E8250EA48D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A853EB3C-A4D0-4209-8EA6-7E8250EA48D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A853EB3C-A4D0-4209-8EA6-7E8250EA48D6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
