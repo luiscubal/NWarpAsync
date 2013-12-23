@@ -26,7 +26,7 @@ using System.Threading.Tasks;
 
 namespace NWarpAsync.EmulateAwait
 {
-    public delegate IEnumerable<Tuple<Task, T>> GeneratorFunc<T>(object[] arguments);
+    public delegate IEnumerable<Tuple<Task, T>> GeneratorFunc<T>(AsyncContext<T> context);
 
     public delegate Task<T> AsyncFunc<T>(params object[] arguments);
 
@@ -48,7 +48,8 @@ namespace NWarpAsync.EmulateAwait
                 throw new ArgumentNullException("generator");
             }
 
-            foreach (var partialResult in generator(arguments))
+            var context = new AsyncContext<T>(arguments);
+            foreach (var partialResult in generator(context))
             {
                 var task = partialResult.Item1;
                 if (task == null)

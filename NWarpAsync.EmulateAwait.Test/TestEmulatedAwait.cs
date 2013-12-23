@@ -30,20 +30,15 @@ namespace NWarpAsync.EmulateAwait.Test
     [TestFixture]
     public class TestEmulatedAwait
     {
-        IEnumerable<Tuple<Task, int>> DoNothing(object[] arguments)
+        IEnumerable<Tuple<Task, int>> DoNothing(AsyncContext<int> context)
         {
-            yield return Tuple.Create(default(Task), 42);
-        }
-
-        IEnumerable<Tuple<Task, int>> Empty(object[] arguments)
-        {
-            return new List<Tuple<Task, int>>();
+            yield return context.Return(42);
         }
 
         [Test]
         public void TestEmpty()
         {
-            Task<int> task = AsyncBuilder.FromGenerator(DoNothing)();
+            Task<int> task = AsyncBuilder.FromGenerator<int>(DoNothing)();
             task.Wait();
             Assert.AreEqual(42, task.Result);
         }
@@ -54,18 +49,89 @@ namespace NWarpAsync.EmulateAwait.Test
             Assert.Throws<ArgumentNullException>(() => AsyncBuilder.FromGenerator(default(GeneratorFunc<int>))());
         }
 
+        IEnumerable<Tuple<Task, int>> Incomplete(AsyncContext<int> context)
+        {
+            yield break;
+        }
+
+
         [Test]
         public void TestIncompleteMethod()
         {
             try
             {
-                AsyncBuilder.FromGenerator(Empty)().Wait();
+                AsyncBuilder.FromGenerator<int>(Incomplete)().Wait();
                 Assert.Fail();
             }
             catch (AggregateException e)
             {
                 Assert.IsInstanceOf<IncompleteOperationException>(e.InnerException);
             }
+        }
+
+        IEnumerable<Tuple<Task, bool>> BasicAwait(AsyncContext<bool> context)
+        {
+            bool done = false;
+            yield return context.Await(Task.Factory.StartNew(() => true));
+            done = context.GrabLastValue();
+            yield return Tuple.Create(default(Task), done);
+        }
+
+        [Test]
+        public void TestSimpleAwait()
+        {
+            var task = AsyncBuilder.FromGenerator<bool>(BasicAwait)();
+            task.Wait();
+            Assert.IsTrue(task.Result);
+        }
+
+        IEnumerable<Tuple<Task, bool>> AwaitException(AsyncContext<bool> context)
+        {
+            bool done = false;
+            yield return context.Await(Task.Factory.StartNew(() => { throw new InvalidOperationException(); }));
+            try
+            {
+                context.GrabLastValue();
+            }
+            catch (AggregateException e) {
+                done = e.InnerException is InvalidOperationException;
+            }
+
+            yield return context.Return(done);
+        }
+
+        [Test]
+        public void TestAwaitException()
+        {
+            var task = AsyncBuilder.FromGenerator<bool>(AwaitException)();
+            task.Wait();
+            Assert.IsTrue(task.Result);
+        }
+
+        IEnumerable<Tuple<Task, int>> MultipleSteps(AsyncContext<int> context)
+        {
+            yield return context.Await(Task.Factory.StartNew(() => { throw new InvalidOperationException(); }));
+            try
+            {
+                context.GrabLastValue();
+                Assert.Fail();
+            }
+            catch (AggregateException e)
+            {
+                Assert.IsInstanceOf<InvalidOperationException>(e.InnerException);
+            }
+
+            yield return context.Await(Task.Factory.StartNew(() => 42));
+            yield return context.Await(Task.Factory.StartNew(() => context.GrabLastValue() * 2));
+            yield return context.Return(context.GrabLastValue());
+        }
+
+        [Test]
+        public void TestMultipleSteps()
+        {
+            var task = AsyncBuilder.FromGenerator<int>(MultipleSteps)();
+            task.Wait();
+            Assert.AreEqual(84, task.Result);
         }
     }
 }
