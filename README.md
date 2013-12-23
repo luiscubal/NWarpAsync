@@ -1,7 +1,7 @@
 NWarpAsync
 ==========
 
-NWarpAsync is a project to use C#'s async/await to do things that it wasn't... entirely made for.
+NWarpAsync is a project to use C#'s coroutine features (async/await/yield) to do things that it wasn't... entirely made for.
 
 Async and Await are two keywords introduced in C# 5 that can suspend a function and resume it later.
 It was originally meant to be used to simplify the implementation of asynchronous methods but it's far more than that.
@@ -76,3 +76,39 @@ class Program
 ### Yield break
 
 To implement `yield break;`, just use `return;`. The `Yielder` class will do the rest for you.
+
+NWarpAsync.EmulateAwait
+-----------------------
+
+Just as NWarpAsync.Yield emulates yield using async/await, NWarpAsync.EmulateAwait emulates async/await using yield.
+The result is not as nice (or useful) as NWarpAsync.Yield, but it still works as a proof-of-concept.
+NWarpAsync.EmulateAwait currently does not support returning void Task instances, but this can be emulated with a Task<object> and a dummy return value (e.g. null).
+
+### Example
+
+```csharp
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using NWarpAsync.EmulateAwait;
+
+class Program
+{
+    static IEnumerable<TaskIteration<int>> AsyncMethod(AsyncContext<int> context)
+    {
+        int arg1 = context.Argument<int>(0);
+        string arg2 = context.Argument<string>(1);
+
+        yield return context.Await(Task.FromResult(arg1 + arg2.Length));
+		int result = context.GrabLastValue();
+		
+		yield return context.Return(result * 2);
+    }
+	
+	public static void Main()
+	{
+        Task<int> task = AsyncBuilder.FromGenerator<int>(AsyncMethod, 10, "Hello");
+		Console.WriteLine(task.Result); //Prints 30
+	}
+}
+```
